@@ -1,0 +1,89 @@
+function generate_blowfish_key():
+    return generate_random_bytes(16)  // Replace with function to generate random bytes
+
+
+function blowfish_encrypt(file_path, key):
+    chunk_size = 64 * 1024
+    output_file = file_path + '.enc'
+
+    backend = default_backend()
+
+    file = open(file_path, 'rb')
+    data = file.read()
+    file.close()
+
+    // Generate a random initialization vector (IV)
+    iv = generate_random_bytes(8)   // Replace with function to generate random bytes
+
+    // Create a Blowfish cipher with CBC mode
+    cipher = Cipher(Blowfish(key), CBC(iv), backend=backend)
+
+    // Create an encryptor
+    encryptor = cipher.encryptor()
+
+    // Pad the data to a multiple of the block size
+    padder = PKCS7(64).padder()
+    padded_data = padder.update(data) + padder.finalize()
+
+    // Encrypt the data
+    encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
+
+    // Write the IV and encrypted data to the output file
+    encrypted_file = open(output_file, 'wb')
+    encrypted_file.write(iv)
+    encrypted_file.write(encrypted_data)
+    encrypted_file.close()
+
+    return output_file
+
+
+function blowfish_decrypt(file_path, key):
+    chunk_size = 64 * 1024
+    output_file = file_path[:-4]  // Remove the '.enc' extension
+
+    backend = default_backend()
+
+    encrypted_file = open(file_path, 'rb')
+    iv = encrypted_file.read(8)  // Read the IV from the beginning of the encrypted file
+    encrypted_data = encrypted_file.read()
+    encrypted_file.close()
+
+    // Create a Blowfish cipher with CBC mode
+    cipher = Cipher(Blowfish(key), CBC(iv), backend=backend)
+
+    // Create a decryptor
+    decryptor = cipher.decryptor()
+
+    // Decrypt the data
+    decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
+
+    // Unpad the decrypted data
+    unpadder = PKCS7(64).unpadder()
+    unpadded_data = unpadder.update(decrypted_data) + unpadder.finalize()
+
+    // Write the decrypted data to the output file
+    decrypted_file = open(output_file, 'wb')
+    decrypted_file.write(unpadded_data)
+    decrypted_file.close()
+
+    return output_file
+
+
+// Generate Blowfish key
+key = generate_blowfish_key()
+
+// Set the file path of the file you want to encrypt and decrypt
+file_path = '/Users/maninderkaur/Desktop/sources for paper/lorem ipsum/book.rtf'
+
+// Encrypt the file and measure the time taken
+start_time = current_time()
+encrypted_file_path = blowfish_encrypt(file_path, key)
+encryption_time = current_time() - start_time
+
+// Decrypt the file and measure the time taken
+start_time = current_time()
+decrypted_file_path = blowfish_decrypt(encrypted_file_path, key)
+decryption_time = current_time() - start_time
+
+print("Encryption time: " + encryption_time + " seconds")
+print("Decryption time: " + decryption_time + " seconds")

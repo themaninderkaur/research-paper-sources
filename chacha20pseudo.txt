@@ -1,0 +1,88 @@
+function generate_chacha20_key():
+    password = generate_random_bytes(16)  // Replace with function to generate random bytes
+    salt = generate_random_bytes(16)      // Replace with function to generate random bytes
+
+    kdf = PBKDF2HMAC(
+        algorithm=SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+        backend=default_backend()
+    )
+    key = kdf.derive(password)
+    return key
+
+
+function encrypt_file(file_path, key):
+    chunk_size = 64 * 1024
+    output_file = file_path + '.enc'
+
+    backend = default_backend()
+
+    file = open(file_path, 'rb')
+    encrypted_file = open(output_file, 'wb')
+
+    nonce = generate_random_bytes(16)   // Replace with function to generate random bytes
+    cipher = Cipher(ChaCha20(key, nonce), mode=None, backend=backend)
+
+    encryptor = cipher.encryptor()
+    encrypted_file.write(nonce)
+
+    while True:
+        chunk = file.read(chunk_size)
+        if len(chunk) == 0:
+            break
+        encrypted_chunk = encryptor.update(chunk)
+        encrypted_file.write(encrypted_chunk)
+
+    file.close()
+    encrypted_file.close()
+
+    return output_file
+
+
+function decrypt_file(file_path, key):
+    chunk_size = 64 * 1024
+    output_file = file_path[:-4]  // Remove the '.enc' extension
+
+    backend = default_backend()
+
+    encrypted_file = open(file_path, 'rb')
+    decrypted_file = open(output_file, 'wb')
+
+    nonce = encrypted_file.read(16)  // Read the nonce from the beginning of the encrypted file
+    cipher = Cipher(ChaCha20(key, nonce), mode=None, backend=backend)
+
+    decryptor = cipher.decryptor()
+
+    while True:
+        chunk = encrypted_file.read(chunk_size)
+        if len(chunk) == 0:
+            break
+        decrypted_chunk = decryptor.update(chunk)
+        decrypted_file.write(decrypted_chunk)
+
+    encrypted_file.close()
+    decrypted_file.close()
+
+    return output_file
+
+
+// Generate ChaCha20 key
+key = generate_chacha20_key()
+
+// Set the file path of the file you want to encrypt and decrypt
+file_path = '/Users/maninderkaur/Desktop/sources for paper/lorem ipsum/book.rtf'
+
+// Encrypt the file and measure the time taken
+start_time = current_time()
+encrypted_file_path = encrypt_file(file_path, key)
+encryption_time = current_time() - start_time
+
+// Decrypt the file and measure the time taken
+start_time = current_time()
+decrypted_file_path = decrypt_file(encrypted_file_path, key)
+decryption_time = current_time() - start_time
+
+print("Encryption time: " + encryption_time + " seconds")
+print("Decryption time: " + decryption_time + " seconds")
